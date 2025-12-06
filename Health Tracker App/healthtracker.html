@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Health & Symptom Tracker</title>
+    <style>
+        :root {
+            --primary: #6b8cce;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+            --text-main: #333;
+            --text-light: #666;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Full width header */
+        header {
+            grid-column: 1 / -1;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border-left: 5px solid var(--primary);
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+        h2 { font-size: 1.1rem; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-top: 0; }
+        
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
+        
+        input[type="text"], input[type="date"], input[type="number"], input[type="time"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        textarea { resize: vertical; } 
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            background: #f9f9f9;
+            padding: 5px 10px;
+            border-radius: 15px;
+            border: 1px solid #eee;
+            cursor: pointer;
+        }
+        .checkbox-item input { margin-right: 5px; }
+
+        .full-width { grid-column: 1 / -1; }
+
+        /* Overall Pain Scale (Top) */
+        .pain-scale-container {
+            grid-column: 1 / -1;
+            background: #fff0f0;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            border: 1px solid #ffe0e0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .pain-range {
+            flex-grow: 1;
+            accent-color: #d32f2f;
+            height: 8px;
+        }
+
+        /* Water Droplets */
+        .water-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        .water-drop {
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.3;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .water-drop.filled {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .meal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* Pain Diagram Placeholder */
+        .pain-map-container {
+            width: 100%;
+            height: 300px;
+            background-color: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            position: relative;
+            background-image: url('body.jpg'); 
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            cursor: crosshair;
+            overflow: hidden;
+        }
+        
+        .pain-map-bg {
+            width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background: transparent; 
+        }
+        .pin {
+            position: absolute;
+            width: 15px; height: 15px;
+            background: rgba(255, 0, 0, 0.6);
+            border-radius: 50%;
+            border: 2px solid white;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .clear-btn {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            z-index: 10;
+            font-size: 0.8rem;
+        }
+
+        /* Color/Mood Selector */
+        .selector-row {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+        }
+        /* UPDATED: Made larger (32px) and added border for visibility */
+        .circle-opt {
+            width: 32px; height: 32px;
+            border-radius: 50%; cursor: pointer;
+            border: 2px solid #eee; /* Light grey border helps dark colors pop */
+            position: relative;
+        }
+        .circle-opt:hover { transform: scale(1.1); border-color: #ccc; }
+        .circle-opt.selected { border-color: #333; box-shadow: 0 0 0 2px white, 0 0 0 4px #333; }
+        
+        .mood-opt {
+            font-size: 1.5rem; cursor: pointer; opacity: 0.5;
+        }
+        .mood-opt:hover { opacity: 1; transform: scale(1.1); }
+        .mood-opt.selected { opacity: 1; transform: scale(1.2); }
+
+        /* Stool Colors - Rainbow Sorted */
+        .c-chalky { background-color: #8C8C74; }
+        .c-yellow-green { background-color: #A4A255; }
+        .c-bright-green { background-color: #7C7F33; }
+        .c-peanut { background-color: #B48C45; }
+        .c-orange-brown { background-color: #9e5920; }
+        .c-med-brown { background-color: #593b1e; }
+        .c-brown { background-color: #654321; }
+        .c-rust { background-color: #7a3216; }
+        .c-red { background-color: #C41230; }
+        .c-dark-olive { background-color: #474a0a; }
+        .c-dark-green { background-color: #78640a; }
+        .c-very-dark { background-color: #4f3107; }
+        .c-green-black { background-color: #1F2113; }
+        .c-streaks { background: radial-gradient(circle, #654321 60%, #C41230 100%); }
+
+        .bm-entries {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .bm-entry {
+            background: #f9f9f9; padding: 15px;
+            border-radius: 8px; border: 1px solid #e0e0e0;
+        }
+
+        .slider-container { display: flex; align-items: center; gap: 10px; }
+        input[type="range"] { flex-grow: 1; }
+
+        .fab {
+            position: fixed; bottom: 20px; right: 20px;
+            background: var(--primary); color: white;
+            padding: 15px 30px; border-radius: 30px;
+            font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer; border: none; transition: transform 0.2s;
+        }
+        .fab:hover { transform: scale(1.05); }
+
+        @media print {
+            .fab, .clear-btn { display: none !important; }
+            body { background-color: white; padding: 0; }
+            .card, .pain-scale-container { 
+                box-shadow: none; border: 1px solid #ddd; break-inside: avoid; 
+            }
+            .pain-scale-container { background: #fff0f0 !important; } 
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>Health & Symptom Tracker</h1>
+        </div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <input type="date" id="dateInput" style="margin:0;">
+            <select id="location" style="margin:0;">
+                <option value="home">🏠 Home</option>
+                <option value="work">🏢 Work</option>
+                <option value="school">🎓 School</option>
+                <option value="travel">✈️ Traveling</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="pain-scale-container">
+        <strong>⚠️ Overall Daily Pain:</strong>
+        <span>No Pain</span>
+        <input type="range" min="0" max="10" value="0" class="pain-range" oninput="document.getElementById('painVal').innerText = this.value">
+        <span>Worst Possible</span>
+        <strong id="painVal" style="font-size:1.2rem; background:white; padding:5px 10px; border-radius:50%;">0</strong>
+    </div>
+
+    <div class="card">
+        <h2>🍽️ Nutrition & Intake</h2>
+        <div class="meal-grid">
+            <textarea rows="2" placeholder="Breakfast"></textarea>
+            <textarea rows="2" placeholder="Lunch"></textarea>
+            <textarea rows="2" placeholder="Dinner"></textarea>
+            <textarea rows="2" placeholder="Snacks"></textarea>
+        </div>
+        
+        <label style="margin-top: 15px;">⚠️ Trigger Foods Eaten:</label>
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox"> Dairy</label>
+            <label class="checkbox-item"><input type="checkbox"> Gluten</label>
+            <label class="checkbox-item"><input type="checkbox"> Sugar</label>
+            <label class="checkbox-item"><input type="checkbox"> Red Meat</label>
+            <label class="checkbox-item"><input type="checkbox"> Greasy Foods</label>
+            <label class="checkbox-item"><input type="checkbox"> Processed Meat</label>
+            <label class="checkbox-item"><input type="checkbox"> Caffeine</label>
+        </div>
+
+        <label style="margin-top: 15px;">💧 Water Intake (Each drop = 8oz):</label>
+        <div class="water-container">
+            <div class="water-drop" onclick="toggleWater(1)">💧</div>
+            <div class="water-drop" onclick="toggleWater(2)">💧</div>
+            <div class="water-drop" onclick="toggleWater(3)">💧</div>
+            <div class="water-drop" onclick="toggleWater(4)">💧</div>
+            <div class="water-drop" onclick="toggleWater(5)">💧</div>
+            <div class="water-drop" onclick="toggleWater(6)">💧</div>
+            <div class="water-drop" onclick="toggleWater(7)">💧</div>
+            <div class="water-drop" onclick="toggleWater(8)">💧</div>
+            <div class="water-drop" onclick="toggleWater(9)">💧</div>
+            <div class="water-drop" onclick="toggleWater(10)">💧</div>
+            <span id="waterTotal" style="margin-left:10px; font-weight:bold; align-self:center;">0 oz</span>
+        </div>
+    </div>
+
+    <div class="card" style="grid-row: span 2;">
+        <h2>🧘‍♀️ Body Map & Symptoms</h2>
+        <p style="font-size:0.8rem; color:#666;">Click on the body to drop a pain pin.</p>
+        
+        <div class="pain-map-container" id="painMap" onclick="addPin(event)">
+            <button class="clear-btn" onclick="clearPins(event)">❌ Clear</button>
+            
+        </div>
+
+        <label style="margin-top:10px;">📝 Pain Description:</label>
+        <textarea rows="3" placeholder="Describe the pain (location, sensation, etc.)..."></textarea>
+
+        <label style="margin-top:10px;">🕒 When did symptoms start?</label>
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="radio" name="onset"> Morning</label>
+            <label class="checkbox-item"><input type="radio" name="onset"> Afternoon</label>
+            <label class="checkbox-item"><input type="radio" name="onset"> Night</label>
+            <label class="checkbox-item"><input type="radio" name="onset"> While Sleeping</label>
+        </div>
+
+        <label style="margin-top:10px;">📉 Effect of Symptoms:</label>
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox"> Couldn't leave house</label>
+            <label class="checkbox-item"><input type="checkbox"> Needed to lay down all day</label>
+            <label class="checkbox-item"><input type="checkbox"> Had to eat different diet</label>
+            <label class="checkbox-item"><input type="checkbox"> Needed to reschedule plans</label>
+        </div>
+
+        <label style="margin-top:15px;">Symptom Checklist:</label>
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox"> Abdominal Cramping</label>
+            <label class="checkbox-item"><input type="checkbox"> Bloating</label>
+            <label class="checkbox-item"><input type="checkbox"> Gas Pain</label>
+            <label class="checkbox-item"><input type="checkbox"> Fatigue</label>
+            <label class="checkbox-item"><input type="checkbox"> Nausea</label>
+            <label class="checkbox-item"><input type="checkbox"> Diarrhea</label>
+            <label class="checkbox-item"><input type="checkbox"> Constipation</label>
+            <label class="checkbox-item"><input type="checkbox"> Period Cramps</label>
+            <label class="checkbox-item"><input type="checkbox"> Anxiety</label>
+            <label class="checkbox-item"><input type="checkbox"> Stress</label>
+            <label class="checkbox-item"><input type="checkbox"> Poor Sleep</label>
+            <label class="checkbox-item"><input type="checkbox"> Night Sweats</label>
+            <label class="checkbox-item"><input type="checkbox"> Hot Flashes</label>
+        </div>
+
+        <label style="margin-top:10px;">Custom Symptoms:</label>
+        <input type="text" placeholder="Custom 1">
+        <input type="text" placeholder="Custom 2">
+        <input type="text" placeholder="Custom 3">
+        <input type="text" placeholder="Custom 4">
+        <input type="text" placeholder="Custom 5">
+    </div>
+
+    <div class="card">
+        <h2>🩸 Cycle & Vitals</h2>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+            <div>
+                <label>Cycle Day:</label>
+                <input type="number" placeholder="#" style="width: 100%;">
+            </div>
+            <div>
+                <label>Phase:</label>
+                <select style="width: 100%;">
+                    <option>Menstrual</option>
+                    <option>Follicular</option>
+                    <option>Ovulation</option>
+                    <option>Luteal</option>
+                </select>
+            </div>
+            <div>
+                <label>Weight:</label>
+                <input type="number" placeholder="lbs/kg" step="0.1">
+            </div>
+        </div>
+        
+        <div class="checkbox-group" style="margin-bottom: 10px;">
+            <label class="checkbox-item"><input type="radio" name="flow"> Light</label>
+            <label class="checkbox-item"><input type="radio" name="flow"> Medium</label>
+            <label class="checkbox-item"><input type="radio" name="flow"> Heavy</label>
+            <label class="checkbox-item" style="border-color: pink;"><input type="checkbox"> Blood Clots</label>
+        </div>
+
+        <label style="margin-top:10px;">⚡ Pain Type (Check all that apply):</label>
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox"> Squeezing</label>
+            <label class="checkbox-item"><input type="checkbox"> Pinching</label>
+            <label class="checkbox-item"><input type="checkbox"> Stabbing</label>
+            <label class="checkbox-item"><input type="checkbox"> Dull</label>
+            <label class="checkbox-item"><input type="checkbox"> Pressure</label>
+            <label class="checkbox-item"><input type="checkbox"> Sharp</label>
+            <label class="checkbox-item"><input type="checkbox"> Cramping</label>
+            <label class="checkbox-item"><input type="checkbox"> Fullness</label>
+            <label class="checkbox-item"><input type="checkbox"> Heaviness</label>
+            <label class="checkbox-item"><input type="checkbox"> Deep Pain</label>
+            <label class="checkbox-item"><input type="checkbox"> Surface Pain</label>
+            <label class="checkbox-item"><input type="checkbox"> Comes & Goes</label>
+            <label class="checkbox-item"><input type="checkbox"> Constant</label>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+            <div>
+                <label>❤️ Blood Pressure:</label>
+                <input type="text" placeholder="e.g. 120/80">
+            </div>
+            <div>
+                <label>🧠 Mood:</label>
+                <div class="selector-row">
+                    <span class="mood-opt" onclick="selectMood(this)" title="Happy">😊</span>
+                    <span class="mood-opt" onclick="selectMood(this)" title="Calm">😌</span>
+                    <span class="mood-opt" onclick="selectMood(this)" title="Neutral">😐</span>
+                    <span class="mood-opt" onclick="selectMood(this)" title="Sad">😢</span>
+                    <span class="mood-opt" onclick="selectMood(this)" title="Anxious">😰</span>
+                    <span class="mood-opt" onclick="selectMood(this)" title="Angry">😠</span>
+                </div>
+            </div>
+        </div>
+
+        <label>📝 Cycle/Symptom Notes:</label>
+        <textarea rows="2" placeholder="Specific notes about cycle or pain..."></textarea>
+        
+        <hr style="border:0; border-top:1px solid #eee;">
+
+        <label>💤 Sleep Quality (1-10)</label>
+        <div class="slider-container">
+            <span>😫</span><input type="range" min="1" max="10"><span>🤩</span>
+        </div>
+
+        <label>⚡ Energy Level (1-10)</label>
+        <div class="slider-container">
+            <span>🪫</span><input type="range" min="1" max="10"><span>🔋</span>
+        </div>
+
+        <label>🏃‍♀️ Physical Activity</label>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:5px;">
+            <input type="number" placeholder="Steps">
+            <input type="number" placeholder="Move Minutes">
+            <label class="checkbox-item" style="justify-content:center;"><input type="checkbox"> Went on a Walk</label>
+        </div>
+        <textarea rows="2" placeholder="Other exercise details..."></textarea>
+    </div>
+
+    <div class="card full-width">
+        <h2>💩 Bowel Movements</h2>
+        <div class="bm-entries">
+            <div class="bm-entry">
+                <strong>Entry #1</strong>
+                <input type="time">
+                <label>Bristol Scale (1-7): <input type="number" min="1" max="7" style="width:50px; display:inline;"></label>
+                
+                <label>Color:</label>
+                <div class="selector-row" id="bm1-colors">
+                    <div class="circle-opt c-chalky" onclick="selectColor(this)" title="Chalky"></div>
+                    <div class="circle-opt c-yellow-green" onclick="selectColor(this)" title="Yellow Green"></div>
+                    <div class="circle-opt c-bright-green" onclick="selectColor(this)" title="Bright Green"></div>
+                    <div class="circle-opt c-peanut" onclick="selectColor(this)" title="Peanut"></div>
+                    <div class="circle-opt c-orange-brown" onclick="selectColor(this)" title="Orange Brown"></div>
+                    <div class="circle-opt c-med-brown" onclick="selectColor(this)" title="Med Brown"></div>
+                    <div class="circle-opt c-brown" onclick="selectColor(this)" title="Brown"></div>
+                    <div class="circle-opt c-rust" onclick="selectColor(this)" title="Rust/Reddish"></div>
+                    <div class="circle-opt c-red" onclick="selectColor(this)" title="Red"></div>
+                    <div class="circle-opt c-dark-olive" onclick="selectColor(this)" title="Dark Olive"></div>
+                    <div class="circle-opt c-dark-green" onclick="selectColor(this)" title="Dark Green"></div>
+                    <div class="circle-opt c-very-dark" onclick="selectColor(this)" title="Black/Dark Brown"></div>
+                    <div class="circle-opt c-green-black" onclick="selectColor(this)" title="Green Black"></div>
+                    <div class="circle-opt c-streaks" onclick="selectColor(this)" title="Streaks"></div>
+                </div>
+
+                <label>Consistency:</label>
+                <input type="text">
+                
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox"> Pain</label>
+                    <label class="checkbox-item"><input type="checkbox"> Bleeding</label>
+                    <label class="checkbox-item"><input type="checkbox"> Urgency</label>
+                    <label class="checkbox-item"><input type="checkbox"> Mucus</label>
+                </div>
+                <textarea rows="2" placeholder="Notes (odor, texture, etc.)..." style="margin-top:10px;"></textarea>
+            </div>
+
+            <div class="bm-entry">
+                <strong>Entry #2</strong>
+                <input type="time">
+                <label>Bristol Scale (1-7): <input type="number" min="1" max="7" style="width:50px; display:inline;"></label>
+                
+                <label>Color:</label>
+                <div class="selector-row" id="bm2-colors">
+                    <div class="circle-opt c-chalky" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-yellow-green" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-bright-green" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-peanut" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-orange-brown" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-med-brown" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-brown" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-rust" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-red" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-dark-olive" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-dark-green" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-very-dark" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-green-black" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-streaks" onclick="selectColor(this)"></div>
+                </div>
+
+                <label>Consistency:</label>
+                <input type="text">
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox"> Pain</label>
+                    <label class="checkbox-item"><input type="checkbox"> Bleeding</label>
+                    <label class="checkbox-item"><input type="checkbox"> Urgency</label>
+                    <label class="checkbox-item"><input type="checkbox"> Mucus</label>
+                </div>
+                <textarea rows="2" placeholder="Notes (odor, texture, etc.)..." style="margin-top:10px;"></textarea>
+            </div>
+
+            <div class="bm-entry">
+                <strong>Entry #3</strong>
+                <input type="time">
+                <label>Bristol Scale (1-7): <input type="number" min="1" max="7" style="width:50px; display:inline;"></label>
+                
+                <label>Color:</label>
+                <div class="selector-row" id="bm3-colors">
+                    <div class="circle-opt c-chalky" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-yellow-green" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-bright-green" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-peanut" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-orange-brown" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-med-brown" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-brown" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-rust" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-red" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-dark-olive" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-dark-green" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-very-dark" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-green-black" onclick="selectColor(this)"></div>
+                    <div class="circle-opt c-streaks" onclick="selectColor(this)"></div>
+                </div>
+
+                <label>Consistency:</label>
+                <input type="text">
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox"> Pain</label>
+                    <label class="checkbox-item"><input type="checkbox"> Bleeding</label>
+                    <label class="checkbox-item"><input type="checkbox"> Urgency</label>
+                    <label class="checkbox-item"><input type="checkbox"> Mucus</label>
+                </div>
+                <textarea rows="2" placeholder="Notes (odor, texture, etc.)..." style="margin-top:10px;"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card full-width">
+        <h2>💊 Treatments & Management</h2>
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox"> Heating Pad</label>
+            <label class="checkbox-item"><input type="checkbox"> Ibuprofen</label>
+            <label class="checkbox-item"><input type="checkbox"> TENS Unit</label>
+            <label class="checkbox-item"><input type="checkbox"> Massage</label>
+            <label class="checkbox-item"><input type="checkbox"> Stretching</label>
+            <label class="checkbox-item"><input type="checkbox"> Bowel Movement</label>
+            <label class="checkbox-item"><input type="checkbox"> Walking</label>
+            <label class="checkbox-item"><input type="checkbox"> Sleeping</label>
+            <label class="checkbox-item"><input type="checkbox"> Laying Down</label>
+            <label class="checkbox-item"><input type="checkbox"> Other</label>
+        </div>
+        <label style="margin-top:10px;">Treatment Notes:</label>
+        <textarea rows="3" placeholder="Details on what helped or didn't help..."></textarea>
+    </div>
+
+    <div class="card full-width">
+        <h2>💭 Daily Notes</h2>
+        <label>General notes for the day:</label>
+        <textarea rows="5" placeholder="Write about your day, stress, environment, etc..."></textarea>
+    </div>
+
+</div>
+
+<button class="fab" onclick="window.print()">🖨️ Print / Save as PDF</button>
+
+<script>
+    // Set today's date
+    document.getElementById('dateInput').valueAsDate = new Date();
+
+    // Pain Map Pin Logic
+    function addPin(event) {
+        const map = document.getElementById('painMap');
+        const pin = document.createElement('div');
+        pin.className = 'pin';
+        
+        const rect = map.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        pin.style.left = x + 'px';
+        pin.style.top = y + 'px';
+        
+        pin.onclick = function(e) {
+            e.stopPropagation();
+            pin.remove();
+        }
+
+        map.appendChild(pin);
+    }
+
+    function clearPins(event) {
+        event.stopPropagation();
+        const pins = document.querySelectorAll('.pin');
+        pins.forEach(pin => pin.remove());
+    }
+
+    // Color Selector Logic
+    function selectColor(element) {
+        const parent = element.parentElement;
+        const siblings = parent.getElementsByClassName('circle-opt');
+        for (let sib of siblings) {
+            sib.classList.remove('selected');
+        }
+        element.classList.add('selected');
+    }
+
+    // Mood Selector Logic
+    function selectMood(element) {
+        const parent = element.parentElement;
+        const siblings = parent.getElementsByClassName('mood-opt');
+        for (let sib of siblings) {
+            sib.classList.remove('selected');
+        }
+        element.classList.add('selected');
+    }
+
+    // Water Tracker Logic
+    function toggleWater(index) {
+        const drops = document.querySelectorAll('.water-drop');
+        const totalText = document.getElementById('waterTotal');
+        
+        for (let i = 0; i < drops.length; i++) {
+            if (i < index) {
+                drops[i].classList.add('filled');
+            } else {
+                drops[i].classList.remove('filled');
+            }
+        }
+        totalText.innerText = (index * 8) + ' oz';
+    }
+</script>
+
+</body>
+</html>
